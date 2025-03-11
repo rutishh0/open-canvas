@@ -1,6 +1,6 @@
 // apps/web/src/app/api/assistants/search/route.ts
 import { NextResponse } from "next/server";
-import { verifyUserAuthenticated } from "../../../../../lib/supabase/verify_user_server";
+import { verifyUserAuthenticated } from "@/lib/supabase/verify_user_server";
 
 export async function GET() {
   try {
