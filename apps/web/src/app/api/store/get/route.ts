@@ -1,30 +1,40 @@
-// apps/web/src/app/api/store/get/route.ts
-import { NextResponse } from "next/server";
-import { verifyUserAuthenticated } from "@/lib/supabase/verify_user_server";
+import { NextRequest, NextResponse } from "next/server";
+import { Client } from "@langchain/langgraph-sdk";
+import { LANGGRAPH_API_URL } from "@/constants";
+import { verifyUserAuthenticated } from "../../../../lib/supabase/verify_user_server";
 
-export async function POST(request: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const auth = await verifyUserAuthenticated();
-
-    if (!auth?.user) {
+    const authRes = await verifyUserAuthenticated();
+    if (!authRes?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+  } catch (e) {
+    console.error("Failed to fetch user", e);
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
-    // Get the request data but prefix with underscore since we're not using it yet
-    const _data = await request.json();
-    
-    // Implement store get functionality
-    // For now, just return an empty result to prevent errors
-    return NextResponse.json({ 
-      result: null,
-      message: "Store endpoint implementation"
+  const { namespace, key } = await req.json();
+
+  const lgClient = new Client({
+    apiKey: process.env.LANGCHAIN_API_KEY,
+    apiUrl: LANGGRAPH_API_URL,
+  });
+
+  try {
+    const item = await lgClient.store.getItem(namespace, key);
+
+    return new NextResponse(JSON.stringify({ item }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
     });
-    
-  } catch (error: any) {
-    console.error("Error in store get:", error);
-    return NextResponse.json(
-      { error: error.message || "Internal server error" },
-      { status: 500 }
+  } catch (_) {
+    return new NextResponse(
+      JSON.stringify({ error: "Failed to share run after multiple attempts." }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
     );
   }
 }
