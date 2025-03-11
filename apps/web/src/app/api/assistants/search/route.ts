@@ -2,7 +2,18 @@
 import { NextResponse } from "next/server";
 import { verifyUserAuthenticated } from "@/lib/supabase/verify_user_server";
 
+// Keep the GET handler
 export async function GET() {
+  return handleRequest();
+}
+
+// Add a POST handler
+export async function POST() {
+  return handleRequest();
+}
+
+// Shared logic for both GET and POST
+async function handleRequest() {
   try {
     const auth = await verifyUserAuthenticated();
 
