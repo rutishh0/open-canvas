@@ -1,17 +1,16 @@
 // apps/web/src/app/api/assistants/search/route.ts
 import { NextResponse } from "next/server";
-import { verifyUserServer } from "@/lib/supabase/verify_user_server";
+import { verifyUserAuthenticated } from "../../../../../lib/supabase/verify_user_server";
 
 export async function GET() {
   try {
-    const { user } = await verifyUserServer();
+    const auth = await verifyUserAuthenticated();
 
-    if (!user?.id) {
+    if (!auth?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Fetch assistants from your database or service
-    // For now, return a simple default assistant for testing
+    // For testing, return a simple default assistant
     const assistants = [
       {
         assistant_id: "default-assistant",
