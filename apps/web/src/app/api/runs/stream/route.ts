@@ -1,4 +1,4 @@
-// apps/web/src/app/api/store/get/route.ts
+// apps/web/src/app/api/runs/stream/route.ts
 import { NextResponse } from "next/server";
 import { verifyUserAuthenticated } from "@/lib/supabase/verify_user_server";
 
@@ -10,18 +10,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get the request data
-    const data = await request.json();
+    // In a production environment, you would implement proper streaming here
+    // For now, just return a basic response to prevent errors
     
-    // Implement store get functionality
-    // For now, just return an empty result to prevent errors
-    return NextResponse.json({ 
-      result: null,
-      message: "Store endpoint implementation"
+    return NextResponse.json({
+      status: "success",
+      message: "Streaming endpoint placeholder"
     });
     
   } catch (error: any) {
-    console.error("Error in store get:", error);
+    console.error("Error in runs stream:", error);
     return NextResponse.json(
       { error: error.message || "Internal server error" },
       { status: 500 }
