@@ -111,25 +111,29 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
     setIsLoadingAllAssistants(true);
     try {
       const client = createClient();
+
+      if (!userId) {
+        console.error("Error: Missing userId when fetching assistants.");
+        return;
+      }
+
+      console.log("Fetching assistants for user:", userId);
+
       const response = await client.assistants.search({
-        metadata: {
-          user_id: userId,
-        },
+        metadata: { user_id: userId },
       });
 
-      setAssistants({
-        ...response,
-      });
-      setIsLoadingAllAssistants(false);
+      console.log("Assistants found:", response);
+      setAssistants([...response]);
+
     } catch (e) {
-      toast({
-        title: "Failed to get assistants",
-        description: "Please try again later.",
-      });
       console.error("Failed to get assistants", e);
+      toast({ title: "Failed to get assistants", description: "Try again later." });
+    } finally {
       setIsLoadingAllAssistants(false);
     }
   };
+
 
   const deleteAssistant = async (assistantId: string): Promise<boolean> => {
     setIsDeletingAssistant(true);
@@ -304,123 +308,114 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
   };
 
   const getOrCreateAssistant = async (userId: string) => {
-    if (selectedAssistant) {
+    if (!userId) {
+      console.error("Error: User ID is missing in getOrCreateAssistant.");
       return;
     }
-    setIsLoadingAllAssistants(true);
+
+    console.log("Looking for an assistant for user:", userId);
+
     const client = createClient();
     let userAssistants: Assistant[] = [];
 
-    const assistantIdCookie = getCookie(ASSISTANT_ID_COOKIE);
-    if (assistantIdCookie) {
-      await legacyGetAndUpdateAssistant(userId, assistantIdCookie);
-      // Return early because this function will set the selected assistant and assistants state.
-      setIsLoadingAllAssistants(false);
-      return;
-    }
-
-    // No cookie found. First, search for all assistants under the user's ID
     try {
       userAssistants = await client.assistants.search({
         graphId: "agent",
-        metadata: {
-          user_id: userId,
-        },
+        metadata: { user_id: userId },
         limit: 100,
       });
+
+      console.log("Fetched assistants:", userAssistants);
     } catch (e) {
-      console.error("Failed to get default assistant", e);
+      console.error("Error fetching assistants:", e);
     }
 
     if (!userAssistants.length) {
-      // No assistants found, create a new assistant and set it as the default.
+      console.log("No assistants found, creating a new one...");
       await createCustomAssistant({
         newAssistant: {
-          iconData: {
-            iconName: "User",
-            iconColor: "#000000",
-          },
-          name: "Default assistant",
-          description: "Your default assistant.",
+          name: "Default Assistant",
+          description: "Your default assistant",
           is_default: true,
+          iconData: { iconName: "User", iconColor: "#000000" },
         },
         userId,
       });
-
-      // Return early because this function will set the selected assistant and assistants state.
-      setIsLoadingAllAssistants(false);
       return;
     }
 
     setAssistants(userAssistants);
-
-    const defaultAssistant = userAssistants.find(
-      (assistant) => assistant.metadata?.is_default
-    );
-    if (!defaultAssistant) {
-      // Update the first assistant to be the default assistant, then set it as the selected assistant.
-      const firstAssistant = userAssistants.sort((a, b) => {
-        return a.created_at.localeCompare(b.created_at);
-      })[0];
-      const updatedAssistant = await editCustomAssistant({
-        editedAssistant: {
-          is_default: true,
-          iconData: {
-            iconName:
-              (firstAssistant.metadata?.iconName as string | undefined) ||
-              "User",
-            iconColor:
-              (firstAssistant.metadata?.iconColor as string | undefined) ||
-              "#000000",
-          },
-          description:
-            (firstAssistant.metadata?.description as string | undefined) ||
-            "Your default assistant.",
-          name:
-            firstAssistant.name?.toLowerCase() === "Untitled"
-              ? "Default assistant"
-              : firstAssistant.name,
-          tools:
-            (firstAssistant.config?.configurable?.tools as
-              | AssistantTool[]
-              | undefined) || undefined,
-          systemPrompt:
-            (firstAssistant.config?.configurable?.systemPrompt as
-              | string
-              | undefined) || undefined,
-        },
-        assistantId: firstAssistant.assistant_id,
-        userId,
-      });
-
-      setSelectedAssistant(updatedAssistant);
-    } else {
-      setSelectedAssistant(defaultAssistant);
-    }
-
-    setIsLoadingAllAssistants(false);
+    setSelectedAssistant(userAssistants[0]);  // Select first available assistant
   };
 
-  const contextValue: AssistantContentType = {
-    assistants,
-    selectedAssistant,
-    isLoadingAllAssistants,
-    isDeletingAssistant,
-    isCreatingAssistant,
-    isEditingAssistant,
-    getOrCreateAssistant,
-    getAssistants,
-    deleteAssistant,
-    createCustomAssistant,
-    editCustomAssistant,
-    setSelectedAssistant,
-  };
 
-  return (
-    <AssistantContext.Provider value={contextValue}>
-      {children}
-    </AssistantContext.Provider>
+  const defaultAssistant = userAssistants.find(
+    (assistant) => assistant.metadata?.is_default
   );
+  if (!defaultAssistant) {
+    // Update the first assistant to be the default assistant, then set it as the selected assistant.
+    const firstAssistant = userAssistants.sort((a, b) => {
+      return a.created_at.localeCompare(b.created_at);
+    })[0];
+    const updatedAssistant = await editCustomAssistant({
+      editedAssistant: {
+        is_default: true,
+        iconData: {
+          iconName:
+            (firstAssistant.metadata?.iconName as string | undefined) ||
+            "User",
+          iconColor:
+            (firstAssistant.metadata?.iconColor as string | undefined) ||
+            "#000000",
+        },
+        description:
+          (firstAssistant.metadata?.description as string | undefined) ||
+          "Your default assistant.",
+        name:
+          firstAssistant.name?.toLowerCase() === "Untitled"
+            ? "Default assistant"
+            : firstAssistant.name,
+        tools:
+          (firstAssistant.config?.configurable?.tools as
+            | AssistantTool[]
+            | undefined) || undefined,
+        systemPrompt:
+          (firstAssistant.config?.configurable?.systemPrompt as
+            | string
+            | undefined) || undefined,
+      },
+      assistantId: firstAssistant.assistant_id,
+      userId,
+    });
+
+    setSelectedAssistant(updatedAssistant);
+  } else {
+    setSelectedAssistant(defaultAssistant);
+  }
+
+  setIsLoadingAllAssistants(false);
+};
+
+const contextValue: AssistantContentType = {
+  assistants,
+  selectedAssistant,
+  isLoadingAllAssistants,
+  isDeletingAssistant,
+  isCreatingAssistant,
+  isEditingAssistant,
+  getOrCreateAssistant,
+  getAssistants,
+  deleteAssistant,
+  createCustomAssistant,
+  editCustomAssistant,
+  setSelectedAssistant,
+};
+
+return (
+  <AssistantContext.Provider value={contextValue}>
+    {children}
+  </AssistantContext.Provider>
+);
 }
 
 export function useAssistantContext() {
