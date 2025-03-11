@@ -1,5 +1,5 @@
 export const LANGGRAPH_API_URL =
-  process.env.LANGGRAPH_API_URL ?? "https://api.smith.langchain.com";
+  process.env.LANGGRAPH_API_URL ?? "https://smith.langchain.com";
 // v2 is tied to the 'open-canvas-prod' deployment.
 export const ASSISTANT_ID_COOKIE = "oc_assistant_id_v2";
 // export const ASSISTANT_ID_COOKIE = "oc_assistant_id";
