@@ -1,20 +1,17 @@
-// File: apps/web/src/app/api/assistants/search/route.ts
-import { NextRequest, NextResponse } from "next/server";
-import { verifyUserServerAction } from "@/lib/supabase/verify_user_server";
+// apps/web/src/app/api/assistants/search/route.ts
+import { NextResponse } from "next/server";
+import { verifyUserServer } from "@/lib/supabase/verify_user_server";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const { userId } = await verifyUserServerAction();
+    const { user } = await verifyUserServer();
 
-    if (!userId) {
+    if (!user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Fetch assistants from your database or service
-    // Example:
-    // const assistants = await db.assistants.findMany({ where: { userId } });
-
-    // For testing, you could return dummy data:
+    // For now, return a simple default assistant for testing
     const assistants = [
       {
         assistant_id: "default-assistant",
@@ -24,7 +21,8 @@ export async function GET(request: NextRequest) {
           iconData: { 
             iconName: "User", 
             iconColor: "#4b5563" 
-          } 
+          },
+          description: "Default assistant"
         },
         config: {
           configurable: {
