@@ -10,8 +10,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get the request data
-    const data = await request.json();
+    // Get the request data but prefix with underscore since we're not using it yet
+    const _data = await request.json();
     
     // Implement store get functionality
     // For now, just return an empty result to prevent errors
